@@ -20,6 +20,11 @@ SETS = {
         "lcdpunish": 1.5, "coverreload": 1, "rescan": 1, "sqspeed": 1, "regenlock": 1, "sqhunt": 1,
         "rearavoid": 40, "lightpad": 5, "earlyspace": 40,
     },
+    "P2": {  # practice behaviours with cited evidence in their source (values = their suggested ones)
+        "cautioust": 265, "pracrim": 0.88, "sqrim": 0.9, "sqloot": 50, "sqband": 1, "sqret": 0.30, "sqretup": 0.65,
+        "sqcorner": 1, "pengage": 80, "sqengage": 80, "smartfire": 0.8, "threatfocus": 1.5, "cornercover": 2,
+        "kiteboost": 40, "kitew": 2.5, "pracregen": 0.6, "sqdodge": 25, "hunthide": 1,
+    },
     "F": {   # free-for-all behaviours (FFA-only or all-mode early-game)
         "facesound": 1, "gunonlyout": 1, "lightlos": 1, "keeplaser": 1, "cubestop": 1, "earlyretreat": 60,
         "cubepush": 60, "ffadrops": 150, "regenhide": 0.5, "watchlast": 5, "laserlos": 30, "chargeengage": 180,

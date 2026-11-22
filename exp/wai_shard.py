@@ -18,7 +18,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--deadline-min", type=float, default=320)
     a = ap.parse_args()
-    variant = "jpl=0.5" if a.set == "P" else "ffa=" + os.environ.get("LAB_FIELD_NAME", "A")
+    variant = "jpl=0.5" if a.set.startswith("P") else "ffa=" + os.environ.get("LAB_FIELD_NAME", "A")
     lo, hi = map(int, a.seeds.split("-"))
     seeds = list(range(lo, hi + 1))
     _, _, R = waidoe.runs(a.set)
