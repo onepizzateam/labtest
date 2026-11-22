@@ -1,1 +1,1 @@
-{"tag": "cmpDrops", "mode": "cmp", "variant": "jpl=0.5", "seeds": "67000-67599", "jobs": 3, "configs": [["ours", {"AllFoes": true, "Stick": 120}], ["ours", {"AllFoes": true, "Stick": 120, "UseDrops": true}]]}
+{"tag": "cmpPassive", "mode": "cmp", "variant": "jpl=0.5", "seeds": "68000-68399", "jobs": 3, "configs": [["ours", null], ["ours", {"PassiveBonus": 100}], ["ours", {"PassiveBonus": 300}]]}

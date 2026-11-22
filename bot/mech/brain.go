@@ -166,6 +166,16 @@ type Params struct {
 	// AimGate (chinatown): give the one-tick turn-ahead credit only if the previous aim command already
 	// pointed at this aim point (commands execute with delay; the turret is still following the old one).
 	AimGate bool
+	// End-game hold, ported from Wai and Jai (github.com/waiprotein/mech-royale-bot, MIT, giddygiddyboy fork).
+	// LateR: next-circle radius at or below which the bot stops retreating (default 70). HoldOut: match time
+	// until which, once the next circle is the final one (<= 30 m), a ghost waits at a hidden spot HoldMin..+25 m
+	// from the final centre instead of walking into the pile-up. 0 = off.
+	LateR   float64
+	HoldOut float64
+	HoldMin float64
+	// PassiveBonus (chinatown, practice exploit): the practice squad engages only 1 + kills/2 bots at a time; the
+	// rest never fire back. Prefer targets that have not hit us for 8 s and are not aiming at us. 0 = off.
+	PassiveBonus float64
 }
 
 func leadK(t *Track, tof float64) float64 {
@@ -552,7 +562,11 @@ func (b *Brain) step(o *Obs, act *Action) {
 	_, gun := hasWeapon(me.Weapons, "gun")
 	_, light := hasWeapon(me.Weapons, "lightning")
 	_, laser := hasWeapon(me.Weapons, "laser")
-	late := z.NextRadius <= 70 || o.Alive <= 3
+	lateR := 70.0
+	if b.P.LateR > 0 {
+		lateR = b.P.LateR
+	}
+	late := z.NextRadius <= lateR || o.Alive <= 3
 
 	var seen []*Track
 	var target, hidden, shy *Track
@@ -631,6 +645,9 @@ func (b *Brain) step(o *Obs, act *Action) {
 		}
 		if now-t.HitMe < 4 {
 			s -= 40
+		}
+		if b.P.PassiveBonus > 0 && now-t.HitMe > 8 && !aimed {
+			s -= b.P.PassiveBonus
 		}
 		if t.Closing > 3 {
 			s -= 15
@@ -867,7 +884,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 					mx, my = 0, 0
 				}
 			}
-		} else if zdist > 3 && (!b.P.Ghost || z.NextRadius <= 30) {
+		} else if zdist > 3 && (!b.P.Ghost || (z.NextRadius <= 30 && !b.holdingOut(z, o.Alive))) {
 			mx, my = b.travel(me, zgx, zgy)
 			mode = "zone-walk"
 		} else if b.P.Ghost {
@@ -1901,6 +1918,9 @@ func (b *Brain) homeCost(o *Obs, px, py float64) float64 {
 
 func (b *Brain) home(o *Obs) (float64, float64, bool) {
 	z := &o.Zone
+	if b.holdingOut(z, o.Alive) {
+		return b.holdHome(o)
+	}
 	out := !b.homeSet || hyp(b.homeXY[0]-z.NextCenter[0], b.homeXY[1]-z.NextCenter[1]) > z.NextRadius*0.8
 	if out || b.now-b.homeAt > 12 {
 		b.homeAt = b.now
@@ -2058,6 +2078,11 @@ func squadParams(p Params) Params {
 	p.LowBonus = 200
 	p.Backstab = 40
 
+	// chinatown practice screen (14,400 sim matches, folded Plackett-Burman, BH q<0.05): engage every
+	// visible foe within MaxTarget (+0.31 +/- 0.06) and a shorter target lock (Stick 300->120: +0.10).
+	p.AllFoes = true
+	p.Stick = 120
+
 	return applyEnv(p, "MECH_SQ")
 }
 
@@ -2082,4 +2107,44 @@ func (b *Brain) showsBack(t *Track, x, y float64) bool {
 		arc = 180
 	}
 	return math.Abs(angDiff(t.Aim[0], math.Atan2(y-t.Pos[1], x-t.Pos[0]))) > arc*math.Pi/360+0.1
+}
+
+// holdingOut / holdHome: end-game hold ported from Wai and Jai (MIT; see the LateR/HoldOut params).
+func (b *Brain) holdingOut(z *Zone, alive int) bool {
+	return b.P.Ghost && b.P.HoldOut > 0 && b.now < b.P.HoldOut && z.NextRadius <= 30 && alive > 2
+}
+
+func (b *Brain) holdHome(o *Obs) (float64, float64, bool) {
+	z := &o.Zone
+	c := b.curZone(z)
+	minD := b.P.HoldMin
+	if minD <= 0 {
+		minD = 40
+	}
+	valid := func(px, py float64) bool {
+		d := hyp(px-z.NextCenter[0], py-z.NextCenter[1])
+		return d >= minD*0.8 && hyp(px-c.X, py-c.Y) <= c.R-12
+	}
+	if !b.homeSet || !valid(b.homeXY[0], b.homeXY[1]) || b.now-b.homeAt > 12 {
+		b.homeAt = b.now
+		best, bestC := [2]float64{}, math.Inf(1)
+		for k := 0; k < 48; k++ {
+			a := b.rng.Float64() * 2 * math.Pi
+			r := minD + b.rng.Float64()*25
+			px, py := z.NextCenter[0]+math.Cos(a)*r, z.NextCenter[1]+math.Sin(a)*r
+			if !valid(px, py) || !b.W.InBounds(px, py) || !b.W.Reachable(px, py) {
+				continue
+			}
+			if cst := b.homeCost(o, px, py) + 0.5*r; cst < bestC {
+				best, bestC = [2]float64{px, py}, cst
+			}
+		}
+		if math.IsInf(bestC, 1) {
+			return z.NextCenter[0], z.NextCenter[1], true
+		}
+		if !b.homeSet || !valid(b.homeXY[0], b.homeXY[1]) || bestC < b.homeCost(o, b.homeXY[0], b.homeXY[1])+0.5*hyp(b.homeXY[0]-z.NextCenter[0], b.homeXY[1]-z.NextCenter[1])-15 {
+			b.homeXY, b.homeSet = best, true
+		}
+	}
+	return b.homeXY[0], b.homeXY[1], b.homeSet
 }
