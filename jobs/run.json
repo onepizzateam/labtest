@@ -1,1 +1,1 @@
-{"tag": "cmpP", "mode": "cmp", "variant": "jpl=0.5", "seeds": "66000-66399", "jobs": 3, "configs": [["ours", {"AllFoes": true, "Stick": 120}], ["wai", null], ["wai", {"sqlrlaser": 150}]]}
+{"tag": "cmpDrops", "mode": "cmp", "variant": "jpl=0.5", "seeds": "67000-67599", "jobs": 3, "configs": [["ours", {"AllFoes": true, "Stick": 120}], ["ours", {"AllFoes": true, "Stick": 120, "UseDrops": true}]]}
