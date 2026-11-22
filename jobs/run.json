@@ -1,1 +1,1 @@
-{"tag": "cmpF", "mode": "cmp", "variant": "ffa=A", "seeds": "55000-55449", "jobs": 1, "configs": [["ours", null], ["wai", null]]}
+{"tag": "cmpP", "mode": "cmp", "variant": "jpl=0.5", "seeds": "66000-66399", "jobs": 3, "configs": [["ours", {"AllFoes": true, "Stick": 120}], ["wai", null], ["wai", {"sqlrlaser": 150}]]}
