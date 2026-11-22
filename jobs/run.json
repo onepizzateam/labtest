@@ -1,1 +1,1 @@
-{"tag": "waiP2", "mode": "wai", "design": "P2", "seeds": "65000-65299", "jobs": 3}
+{"tag": "cmpF", "mode": "cmp", "variant": "ffa=A", "seeds": "55000-55449", "jobs": 1, "configs": [["ours", null], ["wai", null]]}

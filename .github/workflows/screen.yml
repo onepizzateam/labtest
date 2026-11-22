@@ -26,6 +26,7 @@ jobs:
           echo "design=$(jq -r '.design // "1"' jobs/run.json)" >> "$GITHUB_OUTPUT"
           echo "field=$(jq -r '.field // "A"' jobs/run.json)" >> "$GITHUB_OUTPUT"
           echo "configs=$(jq -c '.configs // empty' jobs/run.json)" >> "$GITHUB_OUTPUT"
+          echo "variant=$(jq -r '.variant // "ffa=A"' jobs/run.json)" >> "$GITHUB_OUTPUT"
       - name: Skip extra shards in validate mode
         if: steps.job.outputs.mode == 'validate' && matrix.shard != 0
         run: echo "validate uses shard 0 only"
@@ -52,12 +53,15 @@ jobs:
           LAB_PDESIGN: ${{ steps.job.outputs.design }}
           LAB_FIELD_NAME: ${{ steps.job.outputs.field }}
           LAB_CONFIGS: ${{ steps.job.outputs.configs }}
+          LAB_VARIANT: ${{ steps.job.outputs.variant }}
         run: |
           mkdir -p out
           nproc; free -g | head -2
           cd exp
           if [ "${{ steps.job.outputs.mode }}" = "validate" ]; then
             python -u ffa_shard.py --validate --seeds ${{ steps.job.outputs.seeds }} --jobs ${{ steps.job.outputs.jobs }}
+          elif [ "${{ steps.job.outputs.mode }}" = "cmp" ]; then
+            python -u cmp_shard.py --shard ${{ matrix.shard }} --nshards 20 --seeds ${{ steps.job.outputs.seeds }} --jobs ${{ steps.job.outputs.jobs }}
           elif [ "${{ steps.job.outputs.mode }}" = "wai" ]; then
             python -u wai_shard.py --set ${{ steps.job.outputs.design }} --shard ${{ matrix.shard }} --nshards 20 --seeds ${{ steps.job.outputs.seeds }} --jobs ${{ steps.job.outputs.jobs }}
           elif [ "${{ steps.job.outputs.mode }}" = "practice" ]; then
